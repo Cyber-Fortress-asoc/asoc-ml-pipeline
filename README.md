@@ -4,8 +4,8 @@ This repository contains the machine-learning layer for an Autonomous AI SOC Ana
 
 ## Team
 
-- Student A: data engineering, EDA, feature generation, data quality checks
-- Student B: model training, evaluation, serving, monitoring
+- : data engineering, EDA, feature generation, data quality checks
+- : model training, evaluation, serving, monitoring
 
 ## Project goals
 
