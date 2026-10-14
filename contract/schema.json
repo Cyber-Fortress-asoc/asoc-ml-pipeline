@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/asoc-ml/incident-triage.schema.json",
+  "title": "ASOC incident triage request and response",
+  "type": "object",
+  "properties": {
+    "request": {
+      "type": "object",
+      "properties": {
+        "incident_id": {"type": "string"},
+        "org_id": {"type": "integer"},
+        "alert_count": {"type": "integer", "minimum": 0},
+        "distinct_mitre_techniques": {"type": "integer", "minimum": 0},
+        "distinct_entity_types": {"type": "integer", "minimum": 0},
+        "distinct_categories": {"type": "integer", "minimum": 0},
+        "hour_of_day": {"type": "integer", "minimum": 0, "maximum": 23},
+        "n_devices": {"type": "integer", "minimum": 0},
+        "n_accounts": {"type": "integer", "minimum": 0},
+        "n_ips": {"type": "integer", "minimum": 0}
+      },
+      "required": [
+        "incident_id",
+        "org_id",
+        "alert_count",
+        "distinct_mitre_techniques",
+        "distinct_entity_types",
+        "distinct_categories",
+        "hour_of_day",
+        "n_devices",
+        "n_accounts",
+        "n_ips"
+      ],
+      "additionalProperties": false,
+      "description": "Placeholder v0 fields for inference; these will change after EDA is complete."
+    },
+    "response": {
+      "type": "object",
+      "properties": {
+        "incident_id": {"type": "string"},
+        "verdict": {
+          "type": "string",
+          "enum": ["TruePositive", "BenignPositive", "FalsePositive"]
+        },
+        "probabilities": {
+          "type": "object",
+          "properties": {
+            "TruePositive": {"type": "number", "minimum": 0, "maximum": 1},
+            "BenignPositive": {"type": "number", "minimum": 0, "maximum": 1},
+            "FalsePositive": {"type": "number", "minimum": 0, "maximum": 1}
+          },
+          "required": ["TruePositive", "BenignPositive", "FalsePositive"],
+          "additionalProperties": false
+        },
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "top_features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "impact": {"type": "number", "minimum": 0}
+            },
+            "required": ["name", "impact"],
+            "additionalProperties": false
+          }
+        },
+        "model_version": {"type": "string"}
+      },
+      "required": [
+        "incident_id",
+        "verdict",
+        "probabilities",
+        "confidence",
+        "top_features",
+        "model_version"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": ["request", "response"],
+  "additionalProperties": false
+}
