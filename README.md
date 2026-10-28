@@ -2,17 +2,22 @@
 
 This repository contains the machine-learning layer for an Autonomous AI SOC Analyst / XDR triage platform. It trains a classifier on Microsoft GUIDE-style incident records to predict the incident verdict (`TruePositive`, `BenignPositive`, `FalsePositive`) and exposes the model through a FastAPI service for the backend, agent, and frontend teams.
 
-## Team
-
-- : data engineering, EDA, feature generation, data quality checks
-- : model training, evaluation, serving, monitoring
-
 ## Project goals
 
 - Keep the pipeline beginner-friendly and reproducible
 - Prevent data leakage by using time-aware incident-level splitting
 - Separate exploration from reusable production code (`notebooks/` for experiments, `src/` for buildable code)
 - Keep API contracts explicit in `contract/`
+
+## Phase 1: ML Triage & Detection Layer
+
+This repository handles the data ingestion, feature engineering, and incident triage for the ASOC platform. It consumes raw security evidence rows (from Microsoft GUIDE), aggregates them into discrete incidents, and uses machine learning to predict the incident's legitimacy.
+
+### System Design & Implementation
+* **Data Engine (Polars):** We use Polars for lazy-loading and out-of-core memory execution to process multi-gigabyte Parquet files without exhausting system RAM.
+* **Incident Aggregation:** Raw telemetry rows are grouped by `IncidentId`. Time-series features (like `hour_of_day` and `incident_duration`) are calculated from strictly parsed ISO-8601 timestamps to handle Microsoft's UTC format.
+* **Leakage-Proof Validation:** The pipeline utilizes a strict temporal, incident-grouped split. Incidents are sorted chronologically by their earliest timestamp. Train, validation, and test splits never straddle the same incident, preventing temporal data leakage.
+* **Modeling (XGBoost):** Due to the highly imbalanced and non-linear nature of security logs, we utilize XGBoost with sample weights. It outperforms baseline Logistic Regression by over 2x (Macro-F1) on base features.
 
 ## Repository layout
 
