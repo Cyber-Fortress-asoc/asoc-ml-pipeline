@@ -14,6 +14,7 @@ PROCESSED_DIR = DATA_DIR / "processed"
 
 ID_COL = "IncidentId"
 TIME_COL = "Timestamp"
+INCIDENT_START_TIME_COL = "incident_start_time"
 ORG_COL = "OrgId"
 LABEL_COL = "IncidentGrade"
 
