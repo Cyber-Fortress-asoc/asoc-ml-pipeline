@@ -1,12 +1,19 @@
 import json
 import logging
 from datetime import datetime
-import polars as pl
+
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 
-from asoc_ml.config import MODELS_DIR, DATA_DIR, LABEL_COL, CLASS_NAMES, TIME_COL, ID_COL
+from asoc_ml.config import (
+    CLASS_NAMES,
+    DATA_DIR,
+    ID_COL,
+    INCIDENT_START_TIME_COL,
+    LABEL_COL,
+    MODELS_DIR,
+)
 from asoc_ml.data.load import make_synthetic_incidents
 from asoc_ml.data.splits import make_splits
 from asoc_ml.features.build import build_features
@@ -16,26 +23,31 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def main():
-    processed_path = DATA_DIR / "processed" / "incident_features.parquet"
-    
+    raw_sample_path = DATA_DIR / "raw" / "guide_train_1pct.parquet"
+
     # 1. LOAD DATA: Check for real data, fallback to synthetic in-memory
-    if processed_path.exists():
-        logger.info(f"Loading REAL processed features from {processed_path}")
-        df = pl.read_parquet(processed_path)
+    if raw_sample_path.exists():
+        logger.info(f"Loading REAL raw data from {raw_sample_path}")
+        from asoc_ml.data.load import load_data
+        raw_df = load_data(raw_sample_path)
+
+        logger.info("Building features from raw data...")
+        df = build_features(raw_df)
         data_source = "real"
     else:
-        logger.warning("REAL DATA NOT FOUND! Generating in-memory synthetic features.")
-        logger.warning("These will NOT be saved to data/processed/ to prevent data poisoning.")
+        logger.warning(f"REAL DATA NOT FOUND at {raw_sample_path}! Falling back to synthetic.")
         raw_synthetic = make_synthetic_incidents(n=2000, seed=42)
-        df = build_features(raw_synthetic)
+        df = build_features(raw_synthetic)  # This will currently crash on synthetic data
         data_source = "synthetic"
 
     # 2. SPLIT DATA
     logger.info("Splitting data (Time-based, grouped by incident)...")
-    train_df, val_df, test_df = make_splits(df, time_col="incident_start_time", group_col=ID_COL)
+    train_df, val_df, test_df = make_splits(
+        df, time_col=INCIDENT_START_TIME_COL, group_col=ID_COL
+    )
     
     # Extract feature columns (drop ID, Time, and Label columns)
-    drop_cols = [ID_COL, "org_id", "incident_start_time", LABEL_COL]
+    drop_cols = [ID_COL, "org_id", INCIDENT_START_TIME_COL, LABEL_COL]
     feature_cols = [c for c in train_df.columns if c not in drop_cols]
     
     # Convert Polars to Pandas for Scikit-Learn/XGBoost compatibility
@@ -62,8 +74,7 @@ def main():
     # Convert string labels to integers for XGBoost (0, 1, 2)
     label_map = {name: i for i, name in enumerate(CLASS_NAMES)}
     y_train_num = y_train.map(label_map)
-    y_val_num = y_val.map(label_map)
-    
+
     xgb = XGBClassifier(eval_metric="mlogloss", random_state=42)
     xgb.fit(X_train, y_train_num)
     

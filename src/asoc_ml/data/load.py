@@ -12,17 +12,18 @@ from asoc_ml.config import ID_COL, LABEL_COL, ORG_COL, TIME_COL
 
 
 def load_data(path: str | Path, columns: list[str] | None = None) -> pl.DataFrame:
-    """Load a Parquet file with Polars and return a collected DataFrame.
+    """Load a Parquet file, dropping rows without an incident grade.
 
     Args:
         path: Location of the parquet file.
         columns: Optional subset of columns to read.
 
     Returns:
-        A Polars DataFrame.
+        A Polars DataFrame containing only rows with a non-null incident grade.
     """
     parquet_path = Path(path)
     lazy_frame = pl.scan_parquet(parquet_path)
+    lazy_frame = lazy_frame.filter(pl.col(LABEL_COL).is_not_null())
     if columns is not None:
         lazy_frame = lazy_frame.select(columns)
     return lazy_frame.collect()
